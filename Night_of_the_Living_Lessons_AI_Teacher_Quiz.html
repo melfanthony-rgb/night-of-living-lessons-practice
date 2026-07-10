@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧟 Night of the Living Lessons: AI Teacher Quiz</title>
+
+<style>
+/* ===========================================================
+   Night of the Living Lessons
+   AI for Teachers Quiz Game
+   Everything contained in one HTML file.
+   Easy to customize.
+=========================================================== */
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Verdana, Geneva, Tahoma, sans-serif;
+    background:
+        radial-gradient(circle at top,#304030,#101010 70%);
+    color:white;
+    overflow-x:hidden;
+}
+
+/* Animated stars/fog */
+body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    background-image:
+      radial-gradient(#88ff88 1px, transparent 1px),
+      radial-gradient(#66bb66 1px, transparent 1px);
+    background-size:80px 80px,120px 120px;
+    opacity:.15;
+    animation:drift 25s linear infinite;
+    pointer-events:none;
+}
+
+@keyframes drift{
+    from{transform:translateY(0);}
+    to{transform:translateY(80px);}
+}
+
+.container{
+    max-width:850px;
+    margin:40px auto;
+    padding:30px;
+    background:rgba(20,20,20,.90);
+    border:4px solid #56ff7b;
+    border-radius:20px;
+    box-shadow:0 0 25px #00ff88;
+}
+
+h1{
+    text-align:center;
+    color:#66ff99;
+    text-shadow:2px 2px 5px black;
+    margin-top:0;
+}
+
+.subtitle{
+    text-align:center;
+    color:#d9ffd9;
+    margin-bottom:25px;
+}
+
+#question{
+    font-size:1.3em;
+    margin-bottom:20px;
+    line-height:1.5;
+}
+
+.option{
+    display:block;
+    padding:15px;
+    margin:12px 0;
+    border-radius:12px;
+    border:2px solid #4eff77;
+    cursor:pointer;
+    background:#1f2b1f;
+    transition:.3s;
+}
+
+.option:hover{
+    background:#355535;
+}
+
+input[type=radio]{
+    margin-right:10px;
+    transform:scale(1.2);
+}
+
+button{
+    margin-top:25px;
+    padding:14px 24px;
+    font-size:18px;
+    border:none;
+    border-radius:12px;
+    cursor:pointer;
+    background:#00cc66;
+    color:white;
+    font-weight:bold;
+    transition:.3s;
+}
+
+button:hover{
+    background:#00aa55;
+}
+
+#feedback{
+    margin-top:20px;
+    font-size:1.2em;
+    font-weight:bold;
+    min-height:35px;
+}
+
+.correct{
+    color:#66ff99;
+}
+
+.incorrect{
+    color:#ff8888;
+}
+
+#score{
+    margin-top:15px;
+    font-size:18px;
+}
+
+.hidden{
+    display:none;
+}
+
+.result{
+    text-align:center;
+}
+
+.zombie{
+    font-size:90px;
+}
+
+.playAgain{
+    background:#8a2be2;
+}
+
+.playAgain:hover{
+    background:#7122bb;
+}
+
+.warning{
+    color:gold;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🧟 Night of the Living Lessons</h1>
+
+<div class="subtitle">
+Defeat the Brain-Hungry Zombies by answering AI for Teachers questions!
+</div>
+
+<div id="quizArea">
+
+<div id="question"></div>
+
+<div id="options"></div>
+
+<div id="feedback"></div>
+
+<button id="submitBtn">Submit Answer</button>
+
+<div id="score"></div>
+
+</div>
+
+<div id="resultScreen" class="hidden result">
+<div class="zombie">🧟</div>
+<h2 id="finalMessage"></h2>
+<p id="finalScore"></p>
+
+<button class="playAgain" onclick="restartGame()">Play Again</button>
+
+</div>
+
+</div>
+
+<script>
+
+/* =====================================================
+   QUIZ QUESTIONS
+   Easy to edit or replace.
+===================================================== */
+
+const quiz = [
+
+{
+question:"1. A teacher only has 45 minutes to teach a literacy lesson originally designed for 60 minutes. How can AI best help?",
+options:[
+"Replace the lesson entirely",
+"Shorten and reorganize the lesson while preserving key learning goals",
+"Automatically teach the lesson",
+"Skip the assessment"
+],
+answer:1
+},
+
+{
+question:"2. Which AI task helps teachers spend MORE time analyzing student learning instead of sorting papers?",
+options:[
+"Automatically assigning grades",
+"Sorting exit tickets into strengths and misconceptions",
+"Writing report cards",
+"Taking attendance"
+],
+answer:1
+},
+
+{
+question:"3. A teacher wants additional practice only on fractions with unlike denominators. AI can help by:",
+options:[
+"Removing fractions from the curriculum",
+"Creating random math questions",
+"Curating targeted practice problems based on that skill",
+"Replacing classroom instruction"
+],
+answer:2
+},
+
+{
+question:"4. Mid-year, the district changes assessment dates. What organizational task can AI assist with?",
+options:[
+"Adjusting curriculum maps and pacing guides",
+"Writing student report cards",
+"Creating classroom seating charts",
+"Replacing standards"
+],
+answer:0
+},
+
+{
+question:"5. What is the biggest benefit of using AI for organizing instructional materials?",
+options:[
+"It replaces teachers",
+"It reduces organization time so teachers can focus on instructional decisions",
+"It guarantees perfect lessons",
+"It eliminates assessments"
+],
+answer:1
+}
+
+];
+
+
+/* ==========================================
+   VARIABLES
+========================================== */
+
+let currentQuestion = 0;
+let score = 0;
+let answered = false;
+
+
+/* ==========================================
+   LOAD QUESTION
+========================================== */
+
+function loadQuestion(){
+
+answered = false;
+
+document.getElementById("feedback").innerHTML="";
+
+const q=quiz[currentQuestion];
+
+document.getElementById("question").innerHTML=q.question;
+
+const optionsDiv=document.getElementById("options");
+optionsDiv.innerHTML="";
+
+q.options.forEach((option,index)=>{
+
+const label=document.createElement("label");
+label.className="option";
+
+label.innerHTML=`
+<input type="radio" name="answer" value="${index}">
+${option}
+`;
+
+optionsDiv.appendChild(label);
+
+});
+
+document.getElementById("score").innerHTML=
+`Brains Saved: ${score} / ${quiz.length}`;
+
+}
+
+
+/* ==========================================
+   SUBMIT ANSWER
+========================================== */
+
+document.getElementById("submitBtn").addEventListener("click",function(){
+
+if(answered){
+nextQuestion();
+return;
+}
+
+const selected=document.querySelector('input[name="answer"]:checked');
+
+if(!selected){
+
+document.getElementById("feedback").innerHTML=
+'<span class="warning">⚠️ Choose an answer before battling the zombies!</span>';
+return;
+
+}
+
+answered=true;
+
+const selectedAnswer=parseInt(selected.value);
+
+if(selectedAnswer===quiz[currentQuestion].answer){
+
+score++;
+
+document.getElementById("feedback").innerHTML=
+'<span class="correct">✅ Correct! The zombies retreat!</span>';
+
+}else{
+
+const correct=
+quiz[currentQuestion].options[quiz[currentQuestion].answer];
+
+document.getElementById("feedback").innerHTML=
+'<span class="incorrect">❌ Not quite! Correct answer: <br><strong>'+correct+'</strong></span>';
+
+}
+
+document.getElementById("score").innerHTML=
+`Brains Saved: ${score} / ${quiz.length}`;
+
+this.textContent="Next Question";
+
+});
+
+
+/* ==========================================
+   NEXT QUESTION
+========================================== */
+
+function nextQuestion(){
+
+currentQuestion++;
+
+document.getElementById("submitBtn").textContent="Submit Answer";
+
+if(currentQuestion>=quiz.length){
+
+showResults();
+
+}else{
+
+loadQuestion();
+
+}
+
+}
+
+
+/* ==========================================
+   RESULTS
+========================================== */
+
+function showResults(){
+
+document.getElementById("quizArea").classList.add("hidden");
+document.getElementById("resultScreen").classList.remove("hidden");
+
+let message="";
+
+if(score===quiz.length){
+
+message="🏆 Incredible! You defeated every zombie and became the Master of AI Instruction!";
+
+}else if(score>=4){
+
+message="🎉 Great work! Most of the zombies have been sent back to the graveyard!";
+
+}else if(score>=3){
+
+message="🙂 You survived the night! Keep sharpening your AI teaching skills.";
+
+}else{
+
+message="🧟 The zombies overwhelmed the lesson plans! Review the AI strategies and try again.";
+
+}
+
+document.getElementById("finalMessage").innerHTML=message;
+
+document.getElementById("finalScore").innerHTML=
+`Final Score: <strong>${score} / ${quiz.length}</strong>`;
+
+}
+
+
+/* ==========================================
+   RESTART GAME
+========================================== */
+
+function restartGame(){
+
+currentQuestion=0;
+score=0;
+
+document.getElementById("resultScreen").classList.add("hidden");
+document.getElementById("quizArea").classList.remove("hidden");
+
+loadQuestion();
+
+}
+
+
+/* ==========================================
+   START GAME
+========================================== */
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
